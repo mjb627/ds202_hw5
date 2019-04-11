@@ -1,0 +1,52 @@
+---
+title: "Michael Bardfield; mjb627"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#hw5
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+data <- readRDS("alcohol.rds")
+str(data)
+ 
+#2. Data Cleaning
+data1 <- data
+data1 <- data %>% separate(`Store Location`, c("Address1", "Address2", "Coordinates"), sep = "\n") %>% 
+         mutate(`Coordinates` = gsub("[()]", "", `Coordinates`)) %>% separate(`Coordinates`,c("Lat","Long"), sep = ",")
+head(data1)
+
+
+#Changing some variables to factors
+str(data1)
+data1$`Invoice/Item Number` <- factor(data1$`Invoice/Item Number`)
+data1$`Store Number` <- factor(data1$`Store Number`)
+data1$`Store Name` <- factor(data1$`Store Name`)
+data1$`Vendor Number` <- factor(data1$`Vendor Number`)
+data1$`Vendor Name` <- factor(data1$`Vendor Name`)
+data1$`Category Name` <- factor(data1$`Category Name`)
+
+#Changing coordinates to numeric
+data1$Lat <- as.numeric(data1$Lat)
+data1$Long <- as.numeric(data1$Long)
+
+#Changing Date and ommiting NA
+data1$Date <- mdy(data1$Date)
+data1 <- data1 %>% mutate(Year = year(Date), Month = month(Date), Day = day(Date)) %>% na.omit()
+
+#3. First Overview
+ggplot(data1, aes(x=Lat,y=Long)) + geom_point()
+ggplot(data1, aes(x=`Category Name`, y=`Volume Sold (Liters)`)) + geom_col() + coord_flip()
+
+#4. 
+data2018 <- data1 %>% filter(Year == 2018)
+data2018 %>% summarize(Sales = sum(`Bottles Sold`), Volume = sum(`Volume Sold (Liters)`), Total = sum(`Sale (Dollars)`))
+data2018 %>% group_by(Month, Day) %>%  mutate(VolumeSoldPerDay = sum(`Volume Sold (Liters)`)) %>% 
+         ggplot(aes(x=`Day`,y=VolumeSoldPerDay)) + geom_point() + facet_wrap(~Month)
+#The pattern here is a spike every weekend with bigger spikes during the school year months. This is due to many reasons including football games during the fall and student partying on the weekends.
+
+```
